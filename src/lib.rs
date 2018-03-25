@@ -9,7 +9,6 @@ pub fn base64(hex: &str) -> Result<String, String> {
             // Accumulate bytes until we have 6 chunks of 4.
             acc = (acc << 4) + c_digit;
             num_bits += 4;
-            println!("idx={}, c='{}'({:2}), acc={:024b}, n={}", idx, c, c_digit, acc, num_bits);
             if idx % 6 != 5 {
                 continue;
             }
@@ -17,12 +16,11 @@ pub fn base64(hex: &str) -> Result<String, String> {
             // Read out 4 chunks of 6.
             for i in (0..4).rev() {
                 let out_char_idx = ((acc >> (6 * i)) & 0x3F) as usize;
-                println!("  i:{}, shift:{}, out_char_idx:{:08b}", i, 6*i, out_char_idx); 
                 // TODO: I don't like this nth() call.
                 if let Some(out_char) = B64.chars().nth(out_char_idx) {
                     out.push(out_char);
                 } else {
-                    return Err(format!("Couldn't make output char from {} (shifted: {})", out_char_idx, 6 * i));
+                    return Err(format!("Couldn't make output char from {}", out_char_idx));
                 }
             }
             acc = 0;
@@ -35,17 +33,15 @@ pub fn base64(hex: &str) -> Result<String, String> {
     if acc != 0 {
         acc = acc << (24 - num_bits);
         let padding = (24 - num_bits) / 6;
-        println!("Making up for missing bits: n={}, acc={:024b}", num_bits, acc);
         for i in (0..4).rev() {
             let out_char_idx = ((acc >> (6 * i)) & 0x3F) as usize;
-            println!("  i:{}, shift:{}, out_char_idx:{:08b}", i, 6*i, out_char_idx); 
             // TODO: I don't like this nth() call.
             if i < padding {
                 out.push('=');
             } else if let Some(out_char) = B64.chars().nth(out_char_idx) {
                 out.push(out_char);
             } else {
-                return Err(format!("Couldn't make output char from {} (shifted: {})", out_char_idx, 6 * i));
+                return Err(format!("Couldn't make output char from {}", out_char_idx));
             }
         }
     }
