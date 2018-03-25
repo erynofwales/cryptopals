@@ -2,17 +2,19 @@ static B64: &'static str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 
 pub fn base64(hex: &str) -> Result<String, String> {
     let mut out = String::from("");
+    let mut num_bits = 0;
     let mut acc: u32 = 0;
     for (idx, c) in hex.char_indices() {
         if let Some(c_digit) = c.to_digit(16) {
-            // Accumulate bytes until we have 24 of them. (We can do this with any number of bytes % 6.
+            // Accumulate bytes until we have 6 chunks of 4.
             acc = (acc << 4) + c_digit;
-            println!("idx={}, c='{}'({:2}), acc={:024b}", idx, c, c_digit, acc);
+            num_bits += 4;
+            println!("idx={}, c='{}'({:2}), acc={:024b}, n={}", idx, c, c_digit, acc, num_bits);
             if idx % 6 != 5 {
                 continue;
             }
         
-            // Read out bytes in chunks of 6.
+            // Read out 4 chunks of 6.
             for i in (0..4).rev() {
                 let out_char_idx = ((acc >> (6 * i)) & 0x3F) as usize;
                 println!("  i:{}, shift:{}, out_char_idx:{:08b}", i, 6*i, out_char_idx); 
@@ -24,8 +26,27 @@ pub fn base64(hex: &str) -> Result<String, String> {
                 }
             }
             acc = 0;
+            num_bits = 0;
         } else {
             return Err(format!("Invalid input: {}", c));
+        }
+    }
+
+    if acc != 0 {
+        acc = acc << (24 - num_bits);
+        let padding = (24 - num_bits) / 6;
+        println!("Making up for missing bits: n={}, acc={:024b}", num_bits, acc);
+        for i in (0..4).rev() {
+            let out_char_idx = ((acc >> (6 * i)) & 0x3F) as usize;
+            println!("  i:{}, shift:{}, out_char_idx:{:08b}", i, 6*i, out_char_idx); 
+            // TODO: I don't like this nth() call.
+            if i < padding {
+                out.push('=');
+            } else if let Some(out_char) = B64.chars().nth(out_char_idx) {
+                out.push(out_char);
+            } else {
+                return Err(format!("Couldn't make output char from {} (shifted: {})", out_char_idx, 6 * i));
+            }
         }
     }
 
@@ -37,7 +58,7 @@ mod tests {
     use super::base64;
 
     #[test]
-    fn simple_single() {
+    fn small_wikipedia_example() {
         let input = "4d616e";
         let ex_output = "TWFu";
         println!("");
@@ -46,9 +67,18 @@ mod tests {
     }
 
     #[test]
-    fn padding() {
+    fn one_byte_padding() {
         let input = "6f6d";
         let ex_output = "b20=";
+        println!("");
+        let output = base64(input).expect("Error converting to base64");
+        assert_eq!(output, ex_output);
+    }
+
+    #[test]
+    fn two_byte_padding() {
+        let input = "6f";
+        let ex_output = "bw==";
         println!("");
         let output = base64(input).expect("Error converting to base64");
         assert_eq!(output, ex_output);
