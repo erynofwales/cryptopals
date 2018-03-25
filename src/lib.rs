@@ -31,11 +31,11 @@ pub fn base64(hex: &str) -> Result<String, String> {
     }
 
     if acc != 0 {
+        // Pad the string if we have bits remaining.
         acc = acc << (24 - num_bits);
         let padding = (24 - num_bits) / 6;
         for i in (0..4).rev() {
             let out_char_idx = ((acc >> (6 * i)) & 0x3F) as usize;
-            // TODO: I don't like this nth() call.
             if i < padding {
                 out.push('=');
             } else if let Some(out_char) = B64.chars().nth(out_char_idx) {
