@@ -1,32 +1,37 @@
+use hex::{AsHexBytes, HexResult};
+
 static B64: &'static str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+\\";
 
 pub fn base64(hex: &str) -> Result<String, String> {
     let mut out = String::from("");
     let mut num_bits = 0;
     let mut acc: u32 = 0;
-    for (idx, c) in hex.char_indices() {
-        if let Some(c_digit) = c.to_digit(16) {
-            // Accumulate bytes until we have 6 chunks of 4.
-            acc = (acc << 4) + c_digit;
-            num_bits += 4;
-            if idx % 6 != 5 {
-                continue;
-            }
-        
-            // Read out 4 chunks of 6.
-            for i in (0..4).rev() {
-                let out_char_idx = ((acc >> (6 * i)) & 0x3F) as usize;
-                // TODO: I don't like this nth() call.
-                if let Some(out_char) = B64.chars().nth(out_char_idx) {
-                    out.push(out_char);
-                } else {
-                    return Err(format!("Couldn't make output char from {}", out_char_idx));
+    for (idx, c) in hex.hex_bytes().enumerate() {
+        match c {
+            HexResult::Byte(c) => {
+                // Accumulate bytes until we have 6 chunks of 4.
+                acc = (acc << 4) + (c as u32);
+                num_bits += 4;
+                if idx % 6 != 5 {
+                    continue;
                 }
-            }
-            acc = 0;
-            num_bits = 0;
-        } else {
-            return Err(format!("Invalid input: {}", c));
+        
+                // Read out 4 chunks of 6.
+                for i in (0..4).rev() {
+                    let out_char_idx = ((acc >> (6 * i)) & 0x3F) as usize;
+                    // TODO: I don't like this nth() call.
+                    if let Some(out_char) = B64.chars().nth(out_char_idx) {
+                        out.push(out_char);
+                    } else {
+                        return Err(format!("Couldn't make output char from {}", out_char_idx));
+                    }
+                }
+                acc = 0;
+                num_bits = 0;
+            },
+            HexResult::Invalid(c) => {
+                return Err(format!("Invalid input: {}", c));
+            },
         }
     }
 
