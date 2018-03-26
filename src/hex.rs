@@ -93,6 +93,12 @@ impl HexDigest for Vec<u8> {
     }
 }
 
+impl<'a> HexDigest for &'a [u8] {
+    fn hex_digest(self) -> String {
+        self.into_iter().map(|x| char::from_digit(*x as u32, 16).unwrap()).collect()
+    }
+}
+
 /*
  * AsHexbytes --
  */

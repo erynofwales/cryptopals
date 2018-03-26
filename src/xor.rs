@@ -14,6 +14,8 @@ pub fn fixed(a: &str, b: &str) -> Result<String, FixedXORError> {
 
 #[cfg(test)]
 mod tests {
+    use hex::AsHexBytes;
+    use std::char;
     use super::fixed;
 
     #[test]
@@ -23,5 +25,25 @@ mod tests {
         let ex_output = "746865206b696420646f6e277420706c6179";
         let output = fixed(a, b);
         assert_eq!(output.unwrap(), ex_output);
+    }
+
+    static ENGLISH_LETTER_FREQ: &'static str = "EARIOTNSLCUDPMHGBFYWKVXZJQ";
+
+    fn letter_freq_score(input: &str) -> f32 {
+        let mut score: f32 = 0.0;
+        score
+    }
+
+    #[test]
+    fn cryptopals13() {
+        let input = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
+        for key in 32u32..127 {
+            let possible_output = input.hex_bytes().valid()
+                .map(|c| char::from_u32(c as u32 ^ key))
+                .take_while(|c| c.is_some())
+                .map(|c| c.unwrap())
+                .collect::<String>();
+            println!("{}: {}", key, possible_output);
+        }
     }
 }
