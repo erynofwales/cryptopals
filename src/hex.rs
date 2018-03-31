@@ -1,6 +1,4 @@
 use std::char;
-use std::iter;
-use std::str::Chars;
 
 pub trait HexDecodable<T> {
     fn hex_decoded(self) -> HexDecoder<T>;
