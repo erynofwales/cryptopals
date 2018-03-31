@@ -5,17 +5,14 @@ use std::iter::{Iterator, Map, Zip};
 //    Bad,
 //}
 
-pub type FixedXOR<T, F> = Map<Zip<T, T>, F>;
-
-pub trait FixedXORable<T, F> {
-    fn fixed_xor(self, other: T) -> FixedXOR<T, F>;
+pub trait FixedXORable<T> {
+    fn fixed_xor(self, other: T) -> Map<Zip<T, T>, fn((u8, u8)) -> u8>;
 }
 
-impl<'a, T, F> FixedXORable<T, F> for T 
+impl<'a, T> FixedXORable<T> for T
     where T: Iterator<Item=u8> + 'a,
-          F: Fn((u8,u8)) -> u8
 {
-    fn fixed_xor(self, other: T) -> FixedXOR<T, F> {
+    fn fixed_xor(self, other: T) -> Map<Zip<T, T>, fn((u8, u8)) -> u8> {
         fn xor(tup: (u8, u8)) -> u8 { tup.0 ^ tup.1 }
         self.zip(other).map(xor)
     }
