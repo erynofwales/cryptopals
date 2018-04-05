@@ -1,3 +1,4 @@
+use std::f32;
 use std::iter;
 
 pub type FixedXOR<T, U> = iter::Map<iter::Zip<T, U>, fn((u8, u8)) -> u8>;
@@ -57,16 +58,22 @@ mod tests {
         let mut freqs: Vec<f32> = iter::repeat(0.0f32).take(26).collect();
         let mut num_alphabetic_chars = 0f32;
         for c in input.chars() {
+            if !c.is_ascii_alphabetic() {
+                continue;
+            }
             num_alphabetic_chars += 1f32;
-            if !c.is_alphabetic() { continue; }
             let c = c.to_ascii_uppercase();
             freqs[c as usize - 'A' as usize] += 1f32;
+            println!("char:{} freqs:{:?}", c, freqs);
         }
-        let freqs = freqs.into_iter().map(|sc| sc / num_alphabetic_chars);
+        println!("freqs:{:?}", freqs);
         // Calculate chi-squared for this string, comparing actual frequencies vs. English letter
         // frequencies.
-        let score = freqs.zip(ENGLISH_LETTER_FREQS.iter())
-                         .fold(0f32, |acc, (obs, exp)| acc + (obs - exp).powf(2.0) / exp);
+        let expected_freqs = ENGLISH_LETTER_FREQS.iter().map(|x| x * num_alphabetic_chars);
+        let score = freqs.into_iter()
+                         .zip(expected_freqs.into_iter())
+                         .inspect(|&(obs, exp)| println!("obs:{}, exp:{}", obs, exp))
+                         .fold(0f32, |acc, (obs, exp)| acc + ((obs - exp).powf(2.0) / exp));
         score
     }
 
@@ -74,7 +81,7 @@ mod tests {
     fn cryptopals13() {
         let input = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
         let mut best_key = 0u8;
-        let mut best_score = -1f32;
+        let mut best_score = f32::INFINITY;
         let mut best_output: Option<String> = None;
         for key in 32u8..127 {
             let possible_output = input.chars().hex_decoded()
@@ -82,13 +89,15 @@ mod tests {
                 .map(|x| char::from(x))
                 .collect::<String>();
             let score = letter_freq_score(&possible_output);
-            if score > best_score {
+            println!("{}: {:?} -> {}", key, possible_output, score);
+            if !score.is_nan() && score < best_score {
                 best_score = score;
                 best_output = Some(possible_output);
                 best_key = key;
             }
         }
         let best_output = best_output.expect("expected output");
-        println!("{}: {} -> {}", best_key, best_output, best_score);
+        println!("{}: {:?} -> {}", best_key, best_output, best_score);
+        assert!(best_output.to_lowercase().contains("bacon"));
     }
 }
