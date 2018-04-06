@@ -1,4 +1,3 @@
-use std::f32;
 use std::iter;
 
 pub type FixedXOR<T, U> = iter::Map<iter::Zip<T, U>, fn((u8, u8)) -> u8>;
@@ -34,6 +33,7 @@ impl<'a, T> SingleByteXORable<T> for T
 mod tests {
     use super::*;
     use hex::{HexDecodable, HexEncodable};
+    use std::f32;
 
     #[test]
     fn cryptopals() {
@@ -55,12 +55,9 @@ mod tests {
     ];
 
     fn letter_freq_score(input: &str) -> f32 {
-        let mut freqs: Vec<f32> = iter::repeat(0.0f32).take(26).collect();
+        let mut freqs: Vec<f32> = iter::repeat(0f32).take(26).collect();
         let mut num_alphabetic_chars = 0f32;
-        for c in input.chars() {
-            if !c.is_ascii_alphabetic() {
-                continue;
-            }
+        for c in input.chars().filter(char::is_ascii_alphabetic) {
             num_alphabetic_chars += 1f32;
             let c = c.to_ascii_uppercase();
             freqs[c as usize - 'A' as usize] += 1f32;
@@ -69,10 +66,11 @@ mod tests {
         println!("freqs:{:?}", freqs);
         // Calculate chi-squared for this string, comparing actual frequencies vs. English letter
         // frequencies.
+        // https://en.wikipedia.org/wiki/Letter_frequency
+        // https://crypto.stackexchange.com/questions/30209/developing-algorithm-for-detecting-plain-text-via-frequency-analysis
         let expected_freqs = ENGLISH_LETTER_FREQS.iter().map(|x| x * num_alphabetic_chars);
         let score = freqs.into_iter()
-                         .zip(expected_freqs.into_iter())
-                         .inspect(|&(obs, exp)| println!("obs:{}, exp:{}", obs, exp))
+                         .zip(expected_freqs)
                          .fold(0f32, |acc, (obs, exp)| acc + ((obs - exp).powf(2.0) / exp));
         score
     }
@@ -86,7 +84,7 @@ mod tests {
         for key in 32u8..127 {
             let possible_output = input.chars().hex_decoded()
                 .single_byte_xor(key)
-                .map(|x| char::from(x))
+                .map(char::from)
                 .collect::<String>();
             let score = letter_freq_score(&possible_output);
             println!("{}: {:?} -> {}", key, possible_output, score);
