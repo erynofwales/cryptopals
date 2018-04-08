@@ -39,7 +39,6 @@ impl<'a> LetterFreq for &'a str {
             if english_letters.contains(&c_str) {
                 *freqs.entry(c_str).or_insert(0f32) += 1f32;
             }
-            println!("{:?}: {:?}", c, freqs);
         }
         freqs
     }
@@ -52,12 +51,9 @@ impl<'a> LetterFreq for &'a str {
         let freqs = self.letter_freqs(lang);
         let english_freqs = english_letter_freqs();
         let num_letters = freqs.values().sum::<f32>();
-        println!("freqs:{:?}, num:{}", freqs, num_letters);
         let score = english_freqs.into_iter()
             .map(|(c, sc)| (freqs.get(&c).map_or(0f32, |c| *c), sc * num_letters))
-            .inspect(|c| println!("{:?}", c))
             .fold(0f32, |acc, (obs, exp)| acc + ((obs - exp).powf(2.0) / exp));
-        println!("chi2 -> {}", score);
         score
     }
 }
