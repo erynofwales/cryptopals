@@ -65,9 +65,39 @@ fn s1c4() {
         Err(e) => panic!("failed to open the strings file: {}", e),
     };
     let reader = BufReader::new(&f);
+
+    let mut best_overall_key = 0u8;
+    let mut best_overall_score = f32::INFINITY;
+    let mut best_overall_output: Option<String> = None;
+
     for line in reader.lines() {
+        // Decode the string.
         let line = line.unwrap();
         println!("{:?}", line);
-        let bytes = line.chars().hex_decoded();
+        let decoded = line.chars().hex_decoded().collect::<Vec<u8>>();
+
+        // Do the decryption across all printable ASCII characters
+        let mut best_key = 0u8;
+        let mut best_score = f32::INFINITY;
+        let mut best_output: Option<String> = None;
+        for key in 32u8..127 {
+            let decrypted = decoded.iter().byte_xor(key).map(char::from).collect::<String>();
+            let score = decrypted.chi2_freqs("en");
+            if !score.is_nan() && score < best_score {
+                best_score = score;
+                best_output = Some(decrypted);
+                best_key = key;
+                println!("\tnew best {} -> {:7.3} {:?}", key, score, best_output);
+            }
+        }
+
+        if best_output.is_some() && best_score < best_overall_score {
+            best_overall_key = best_key;
+            best_overall_score = best_score;
+            best_overall_output = best_output;
+            println!("-> new overall best: {}: {:?} -> {}", best_overall_key, best_overall_output, best_overall_score);
+        }
     }
+
+    println!("Overall Best: {} {:7.3} {:?}", best_overall_key, best_overall_score, best_overall_output);
 }
