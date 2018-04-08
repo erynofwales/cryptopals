@@ -32,8 +32,10 @@ impl<'a, T> SingleByteXORable<T> for T
 #[cfg(test)]
 mod tests {
     use super::*;
+    use letter_frequency::LetterFreq;
     use hex::{HexDecodable, HexEncodable};
     use std::f32;
+    use std::ascii::AsciiExt;
 
     #[test]
     fn cryptopals() {
@@ -47,34 +49,6 @@ mod tests {
         assert_eq!(output, ex_output);
     }
 
-    static ENGLISH_LETTER_FREQS: &'static [f32] = &[
-        0.08167, 0.01492, 0.02782, 0.04253, 0.12702, 0.02228, 0.02015, // A-G
-        0.06094, 0.06996, 0.00153, 0.00772, 0.04025, 0.02406, 0.06749, // H-N
-        0.07507, 0.01929, 0.00095, 0.05987, 0.06327, 0.09056, 0.02758, // O-U
-        0.00978, 0.02360, 0.00150, 0.01974, 0.00074                    // V-Z
-    ];
-
-    fn letter_freq_score(input: &str) -> f32 {
-        let mut freqs: Vec<f32> = iter::repeat(0f32).take(26).collect();
-        let mut num_alphabetic_chars = 0f32;
-        for c in input.chars().filter(char::is_ascii_alphabetic) {
-            num_alphabetic_chars += 1f32;
-            let c = c.to_ascii_uppercase();
-            freqs[c as usize - 'A' as usize] += 1f32;
-            println!("char:{} freqs:{:?}", c, freqs);
-        }
-        println!("freqs:{:?}", freqs);
-        // Calculate chi-squared for this string, comparing actual frequencies vs. English letter
-        // frequencies.
-        // https://en.wikipedia.org/wiki/Letter_frequency
-        // https://crypto.stackexchange.com/questions/30209/developing-algorithm-for-detecting-plain-text-via-frequency-analysis
-        let expected_freqs = ENGLISH_LETTER_FREQS.iter().map(|x| x * num_alphabetic_chars);
-        let score = freqs.into_iter()
-                         .zip(expected_freqs)
-                         .fold(0f32, |acc, (obs, exp)| acc + ((obs - exp).powf(2.0) / exp));
-        score
-    }
-
     #[test]
     fn cryptopals13() {
         let input = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
@@ -86,7 +60,7 @@ mod tests {
                 .single_byte_xor(key)
                 .map(char::from)
                 .collect::<String>();
-            let score = letter_freq_score(&possible_output);
+            let score = possible_output.chi2_freqs("en");
             println!("{}: {:?} -> {}", key, possible_output, score);
             if !score.is_nan() && score < best_score {
                 best_score = score;
