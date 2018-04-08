@@ -29,9 +29,5 @@ impl<'a, T> ByteXOR<T> for T where T: iter::Iterator<Item=u8> + 'a {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use letter_frequency::LetterFreq;
-    use hex::{HexDecodable, HexEncodable};
-    use std::f32;
-
+    // TODO: Probably write some tests here??
 }
