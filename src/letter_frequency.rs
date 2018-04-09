@@ -24,6 +24,28 @@ pub fn english_letter_freqs() -> FreqMap {
     FreqMap::from_iter(char_strings.zip(ENGLISH_LETTER_FREQS.iter().map(|x| *x)))
 }
 
+struct EnglishLetterSet {
+    freqs: FreqMap,
+}
+
+impl EnglishLetterSet {
+    fn new() -> EnglishLetterSet {
+        EnglishLetterSet { freqs: english_letter_freqs() }
+    }
+
+    fn is_valid(&self, c: char) -> bool {
+        c.is_ascii_alphabetic()
+    }
+
+    fn is_ignored(&self, c: char) -> bool {
+        c.is_ascii_whitespace() || c.is_ascii_punctuation() || c.is_ascii_digit()
+    }
+
+    fn frequency_for(&self, c: char) -> f32 {
+        freqs.get(c.to_uppercase().to_string()).unwrap_or(0f32);
+    }
+}
+
 pub trait LetterFreq {
     fn letter_freqs(&self, lang: &str) -> FreqMap;
     fn chi2_freqs(&self, lang: &str) -> f32;
@@ -32,13 +54,10 @@ pub trait LetterFreq {
 impl<'a> LetterFreq for &'a str {
     fn letter_freqs(&self, lang: &str) -> FreqMap {
         assert_eq!(lang, "en", "only 'en' language is supported rn");
-        let english_letters = english_letters();
         let mut freqs = FreqMap::new();
         for c in self.chars() {
             let c_str = c.to_uppercase().to_string();
-            if english_letters.contains(&c_str) {
-                *freqs.entry(c_str).or_insert(0f32) += 1f32;
-            }
+            *freqs.entry(c_str).or_insert(0f32) += 1f32;
         }
         freqs
     }
@@ -51,8 +70,8 @@ impl<'a> LetterFreq for &'a str {
         let freqs = self.letter_freqs(lang);
         let english_freqs = english_letter_freqs();
         let num_letters = freqs.values().sum::<f32>();
-        let score = english_freqs.into_iter()
-            .map(|(c, sc)| (freqs.get(&c).map_or(0f32, |c| *c), sc * num_letters))
+        let score = freqs.into_iter()
+            .map(|(c, f)| (f, english_freqs.get(&c).map_or(1e-8, |c| c * num_letters)))
             .fold(0f32, |acc, (obs, exp)| acc + ((obs - exp).powf(2.0) / exp));
         score
     }

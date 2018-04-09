@@ -1,4 +1,5 @@
 use std::iter;
+use std::slice;
 
 pub type FixedByteXOR<T, U> = iter::Map<iter::Zip<T, U>, fn((u8, u8)) -> u8>;
 pub type SingleByteXOR<T> = FixedByteXOR<T, iter::Repeat<u8>>;

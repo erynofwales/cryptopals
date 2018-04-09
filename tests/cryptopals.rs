@@ -81,7 +81,7 @@ fn s1c4() {
         let mut best_score = f32::INFINITY;
         let mut best_output: Option<String> = None;
         for key in 32u8..127 {
-            let decrypted = decoded.iter().byte_xor(key).map(char::from).collect::<String>();
+            let decrypted = decoded.iter().map(|c| *c).byte_xor(key).map(char::from).collect::<String>();
             let score = decrypted.chi2_freqs("en");
             if !score.is_nan() && score < best_score {
                 best_score = score;
